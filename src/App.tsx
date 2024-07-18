@@ -7,16 +7,24 @@ import Screen from './components/Screen';
 
 function App() {
 
+    const sort_options = [
+        {label:'Median Annual Salary (High to low)', field:'a_median', dir: 'asc'},
+        {label:'Median Annual Salary (Low to high)', field:'a_median', dir: 'desc'},
+        {label:'Total Employees (High to low)', field: 'tot_emp' , dir: 'asc'},
+        {label:'Total Employees (Low to high)', field: 'tot_emp', dir: 'desc'},
+    ]
+
+    /* State */
     interface SearchFields {
+        sort:       string;
         education:  null|string,
         min_salary: null|string,
         sectors:    null|Object[];
     }
 
-    /* State */
-
-    // All start as null to indicate fields were neither filled out or skipped yet
+    // Null filters indicate fields were not interacted with yet
     const initialSearch: SearchFields = {
+        sort:       'a_median.asc',
         education:  null,
         min_salary: null,
         sectors:    null,
@@ -26,31 +34,37 @@ function App() {
     const [search, setSearch] = React.useState<SearchFields>(initialSearch);
     const [results, setResults] = React.useState<IndustryFields[]>([]);
 
+
+    /* Get data from form */
+    const sortInput = React.useRef<HTMLSelectElement>(null);
     const educationInput = React.useRef<HTMLSelectElement>(null);
     const minimumInput = React.useRef<HTMLInputElement>(null);
     const sectorsInput = React.useRef<HTMLFieldSetElement>(null);
 
-    /* Get data from form */
-    const setEducation = (e: Event) => {
+    const setEducation = (e: React.ChangeEvent) => {
         e.preventDefault();
-        setSearch({...search, education: educationInput?.current?.value ?? ''})
+        setSearch({...search, education: educationInput?.current?.value ?? ''});
         setScreen(2);
     }
 
     const setMinimum = (e: Event) => {
         e.preventDefault();
-        setSearch({...search, min_salary: minimumInput?.current?.value ?? ''})
+        setSearch({...search, min_salary: minimumInput?.current?.value ?? ''});
         setScreen(3);
     }
 
     const setSectors = (e: Event) => {
         e.preventDefault();
         const inputs = sectorsInput?.current?.querySelectorAll<HTMLInputElement>('input[name="sector"]');
-        // const inputs = Array.from(sectorsInput.current.querySelectorAll('input[name="sector"]'));
         if (inputs) {
             const checked = Array.from(inputs).filter(c => c.checked);
-            setSearch({...search, sectors: checked.map(c => c.value)})
+            setSearch({...search, sectors: checked.map(c => c.value)});
         }
+    }
+
+    const setSort = () => {
+        const input = sortInput?.current?.value ?? 'a_median.asc';
+        setSearch({...search, sort: input});
     }
 
     // Get list of industries based on NAICS sector codes
@@ -74,8 +88,22 @@ function App() {
         return (salary_num >= base_num);
     }
 
+    const sortByField = (dataset: IndustryFields[], sort: string) => {
+        const field = sort.split('.')[0];
+        const dir = sort.split('.')[1];
 
-    /* Data filtering */
+        let sorted = [...dataset].sort((a: IndustryFields, b: IndustryFields) => {
+            const aNum = parseInt((a[field as keyof IndustryFields] as string).replaceAll(',', ''));
+            const bNum = parseInt((b[field as keyof IndustryFields] as string).replaceAll(',', ''));
+
+            if (dir === 'asc') {
+                return (aNum < bNum ? 1 : (aNum > bNum) ? -1 : 0);
+            }
+            return (aNum > bNum ? 1 : (aNum < bNum) ? -1 : 0);
+            
+        })
+        return sorted;
+    }
 
     // Get list of NAICS codes; some sectors have single numbers ('11') and some have ranges ('31-33')
     const getNaicsByName = (sectors: SectorFields[]) => {
@@ -98,9 +126,15 @@ function App() {
 
 
     React.useEffect(() => {
-        if (Object.values(search).every(x => x !== null) && results.length === 0) {
-            let dataset = INDUSTRIES_DATA as IndustryFields[];
+        if (Object.values(search).every(x => x !== null)) {
+            let dataset;
 
+            if (results.length === 0) {
+                dataset = INDUSTRIES_DATA as IndustryFields[];
+            } else {
+                dataset = results;
+            }
+            
             // Filter by education level
             if (search.education !== null && search.education.length > 0) {
                 const filtered_by_education = dataset.filter(x => x.education_category === search.education);
@@ -121,20 +155,10 @@ function App() {
                 });
                 dataset = filtered_by_salary;
             }
+
+            const sorted = sortByField(dataset, search.sort);
             
-            const sorted: IndustryFields[] = dataset.sort((a: IndustryFields, b: IndustryFields) => {
-                const aNum = parseInt((a.a_median as string).replaceAll(',', ''));
-                const bNum = parseInt((b.a_median as string).replaceAll(',', ''));
-                if (aNum < bNum) {
-                    return 1;
-                }
-                if (aNum > bNum) {
-                    return -1;
-                }
-                return 0;
-            });
-            
-            if (sorted.length > 0) {
+            if (JSON.stringify(sorted) !== JSON.stringify(results)) {
                 setResults(sorted);
             }
         }
@@ -231,7 +255,29 @@ function App() {
                         <h2>No results match your criteria! Try <a href="/">starting over and broadening your search</a>.</h2>
                     :
                         <div className="results">
-                            <h2>The top {results.length <= 10 ? results.length : 10} highest-paying industries available to you are...</h2>
+                            <h2>Based on your search, {results.length <= 10 ? results.length : 10} industries available to you are...</h2>
+
+                            <p>
+                                <label htmlFor="sort-results">Sort by: </label>
+                                <select 
+                                    id="sort-results" 
+                                    className="results-filter" 
+                                    onChange={setSort}
+                                    ref={sortInput}
+                                >
+                                    {sort_options.map(opt => {
+                                        return (
+                                            <option 
+                                                key={`${opt.field}.${opt.dir}`}
+                                                value={`${opt.field}.${opt.dir}`}
+                                            >
+                                                {opt.label}
+                                            </option>
+                                        )
+                                    })}
+                                </select>
+                            </p>
+
                             <ol className="results-list">
                                 {results.slice(0,9).map((res: IndustryFields) => {
                                     return (
@@ -247,7 +293,7 @@ function App() {
                                                         title={`Learn more about the ${ res.naics_name } industry on the US Bureau of Labor Statistics website`}
                                                     >Learn more</a>
                                                 </header>
-                                                {search?.education?.length === 0 && <p>(This salary is for the {res.education_category} education level.)</p>}
+                                                {search?.education?.length === 0 && <p>(This salary is for the {res.education_category} education level)</p>}
                                                 This industry has around <strong>{ res.tot_emp }</strong> employees working at this level nationally. 
                                                 { res.a_pct25 !== '#' && res.a_pct75 !== '#' && ` Salaries typically range from $${ res.a_pct25 } to $${ res.a_pct75 }.` }
                                             </div>
