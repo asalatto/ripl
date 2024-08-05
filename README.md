@@ -1,4 +1,4 @@
-# Waymark App (RIPL Sample Project)
+# Waymark App
 
 This is a simple React app that points you toward lucrative industries to break into based on your education level, desired salary, and sector interests. It's built using [2023 National Occupational Employment and Wage estimates](https://www.bls.gov/oes/current/oes_nat.htm), as well as [Entry level educational requirement](https://www.bls.gov/oes/additional.htm) datasets.
 
