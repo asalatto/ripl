@@ -167,7 +167,7 @@ function App() {
     return (
         <main className="App">
             <header>
-                <h1><a href="/">Waymark</a></h1>
+                <h1><a href="./">Waymark</a></h1>
                 { results.length === 0 &&
                     <p>Explore career paths available to you right now, no matter how much schooling you have. Answer the questions below, or skip them to see industry results.</p>
                 }
