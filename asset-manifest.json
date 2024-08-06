@@ -1,0 +1,14 @@
+{
+  "files": {
+    "main.css": "/waymark/static/css/main.cd43a6e5.css",
+    "main.js": "/waymark/static/js/main.04d75612.js",
+    "index.html": "/waymark/index.html",
+    "static/media/dropdown.svg": "/waymark/static/media/dropdown.b6b66ce40900b637aa84.svg",
+    "main.cd43a6e5.css.map": "/waymark/static/css/main.cd43a6e5.css.map",
+    "main.04d75612.js.map": "/waymark/static/js/main.04d75612.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.cd43a6e5.css",
+    "static/js/main.04d75612.js"
+  ]
+}
